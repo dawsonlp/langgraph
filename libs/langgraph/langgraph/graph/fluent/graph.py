@@ -40,7 +40,9 @@ class FluentGraph(Generic[StateT]):
         Args:
             state_schema: The schema class that defines the state
         """
-        self._graph = StateGraph(state_schema)
+        # StateGraph has bounded type requirements, but we accept any state schema
+        # at runtime. Type system limitation, not a safety issue.
+        self._graph = StateGraph(state_schema)  # type: ignore[type-var]
         self._state_schema = state_schema
         self._last_nodes: list[str] = []
         self._node_counter = 0
@@ -194,7 +196,7 @@ class FluentGraph(Generic[StateT]):
             The generated node name
         """
         node_name = self._generate_node_name(node.func)
-        self._graph.add_node(node_name, node.func)
+        self._graph.add_node(node_name, node.func)  # type: ignore[arg-type]
 
         # Create routing function with unique name to avoid conflicts
         # when multiple conditionals branch from same source
