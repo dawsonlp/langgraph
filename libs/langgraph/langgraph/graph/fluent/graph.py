@@ -196,10 +196,16 @@ class FluentGraph(Generic[StateT]):
         node_name = self._generate_node_name(node.func)
         self._graph.add_node(node_name, node.func)
 
-        # Create routing function that evaluates condition
+        # Create routing function with unique name to avoid conflicts
+        # when multiple conditionals branch from same source
+        route_func_name = f"route_to_{node_name}"
+
         def route_condition(state: StateT) -> str:
             """Route to node if condition is True, else skip."""
             return node_name if node.condition(state) else END
+
+        # Set the function name for debugging/introspection
+        route_condition.__name__ = route_func_name
 
         # Connect with conditional edge
         if not self._has_start:
