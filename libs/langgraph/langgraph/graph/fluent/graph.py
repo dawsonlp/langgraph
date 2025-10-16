@@ -47,13 +47,14 @@ class FluentGraph(Generic[StateT]):
         self._has_start = False
 
     def then(
-        self, node_or_nodes: Callable | list[Callable | ConditionalNode]
+        self, node_or_nodes: Callable | ConditionalNode | list[Callable | ConditionalNode]
     ) -> "FluentGraph[StateT]":
         """Add node(s) to the graph with automatic edge creation.
 
         Args:
             node_or_nodes: Either:
                 - A single callable (sequential execution)
+                - A single ConditionalNode (conditional execution)
                 - A list of callables/ConditionalNodes (parallel execution)
 
         Returns:
@@ -66,9 +67,13 @@ class FluentGraph(Generic[StateT]):
             >>> graph.then([node1, node2])
             >>> # Conditional
             >>> from langgraph.graph.fluent import enable_if
+            >>> graph.then(enable_if(node1, condition))
             >>> graph.then([enable_if(node1, condition), node2])
         """
-        if callable(node_or_nodes) and not isinstance(node_or_nodes, list):
+        if isinstance(node_or_nodes, ConditionalNode):
+            # Single conditional node - wrap in list for consistent handling
+            return self._add_parallel_nodes([node_or_nodes])
+        elif callable(node_or_nodes) and not isinstance(node_or_nodes, list):
             # Single node - sequential execution
             return self._add_single_node(node_or_nodes)
         elif isinstance(node_or_nodes, list):
