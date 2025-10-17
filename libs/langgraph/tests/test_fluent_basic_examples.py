@@ -34,9 +34,7 @@ def test_linear_workflow():
         return {"value": state["value"] - 5}
 
     # Build linear workflow
-    graph = (
-        FluentGraph(SimpleState).then(step1).then(step2).then(step3).compile()
-    )
+    graph = FluentGraph(SimpleState).then(step1).then(step2).then(step3).compile()
 
     # Execute: (0 + 10) * 2 - 5 = 15
     result = graph.invoke({"value": 0})

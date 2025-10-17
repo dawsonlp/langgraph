@@ -69,12 +69,17 @@ def test_conditional_node_repr():
 
 
 def test_conditional_node_with_lambda():
-    """Test ConditionalNode with lambda functions."""
-    func = lambda state: {"value": state["value"] * 2}
-    condition = lambda state: state["value"] < 10
+    """Test ConditionalNode with named functions."""
+
+    def func(state):
+        return {"value": state["value"] * 2}
+
+    def condition(state):
+        return state["value"] < 10
 
     node = ConditionalNode(func, condition)
 
     assert callable(node.func)
     assert callable(node.condition)
-    assert "lambda" in repr(node).lower()
+    assert "func" in repr(node).lower()
+    assert "condition" in repr(node).lower()

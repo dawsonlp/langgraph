@@ -101,25 +101,31 @@ def test_email_spam_detection_workflow():
     graph = (
         FluentGraph(EmailState)
         .then(analyze_content)
-        .then([enable_if(classify_as_spam, is_spam), enable_if(classify_as_ham, is_ham)])
+        .then(
+            [enable_if(classify_as_spam, is_spam), enable_if(classify_as_ham, is_ham)]
+        )
         .compile()
     )
 
     # Test spam email
-    spam_result = graph.invoke({
-        "content": "WIN FREE MONEY! Click now!",
-        "is_spam": False,
-        "classification": "",
-    })
+    spam_result = graph.invoke(
+        {
+            "content": "WIN FREE MONEY! Click now!",
+            "is_spam": False,
+            "classification": "",
+        }
+    )
     assert spam_result["is_spam"] is True
     assert spam_result["classification"] == "SPAM"
 
     # Test legitimate email
-    ham_result = graph.invoke({
-        "content": "Meeting at 3pm today",
-        "is_spam": False,
-        "classification": "",
-    })
+    ham_result = graph.invoke(
+        {
+            "content": "Meeting at 3pm today",
+            "is_spam": False,
+            "classification": "",
+        }
+    )
     assert ham_result["is_spam"] is False
     assert ham_result["classification"] == "HAM"
 

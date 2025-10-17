@@ -24,8 +24,12 @@ def test_enable_if_creates_conditional_node():
 
 def test_enable_if_with_lambdas():
     """Test enable_if with lambda functions."""
-    func = lambda state: {"value": state["value"] * 2}
-    condition = lambda state: state["value"] < 10
+
+    def func(state):
+        return {"value": state["value"] * 2}
+
+    def condition(state):
+        return state["value"] < 10
 
     result = enable_if(func, condition)
 

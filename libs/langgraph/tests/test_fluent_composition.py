@@ -1,6 +1,5 @@
 """Tests for FluentGraph composition."""
 
-import pytest
 from typing_extensions import TypedDict
 
 from langgraph.graph.fluent import FluentGraph, enable_if

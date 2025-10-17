@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Generic, TypeVar, Union
 
+from langgraph._internal._runnable import coerce_to_runnable
 from langgraph.constants import END, START
 from langgraph.graph.fluent.nodes import ConditionalNode
 from langgraph.graph.state import CompiledStateGraph, StateGraph
@@ -147,7 +148,10 @@ class FluentGraph(Generic[StateT]):
             Self for chaining
         """
         node_name = self._generate_node_name(node)
-        self._graph.add_node(node_name, node)
+        self._graph.add_node(
+            node_name,
+            coerce_to_runnable(node, name=node_name, trace=False),
+        )
 
         # Connect from last nodes or START
         if not self._has_start:
@@ -183,7 +187,10 @@ class FluentGraph(Generic[StateT]):
                 # Convert FluentGraph to callable and add as single node
                 callable_node = node.to_callable()
                 node_name = self._generate_node_name(callable_node)
-                self._graph.add_node(node_name, callable_node)
+                self._graph.add_node(
+                    node_name,
+                    coerce_to_runnable(callable_node, name=node_name, trace=False),
+                )
 
                 # Connect from last nodes or START
                 if not self._has_start:
@@ -201,7 +208,10 @@ class FluentGraph(Generic[StateT]):
             else:
                 # Regular node - add normally
                 node_name = self._generate_node_name(node)
-                self._graph.add_node(node_name, node)
+                self._graph.add_node(
+                    node_name,
+                    coerce_to_runnable(node, name=node_name, trace=False),
+                )
 
                 # Connect from last nodes or START
                 if not self._has_start:
@@ -227,7 +237,10 @@ class FluentGraph(Generic[StateT]):
             The generated node name
         """
         node_name = self._generate_node_name(node.func)
-        self._graph.add_node(node_name, node.func)  # type: ignore[arg-type]
+        self._graph.add_node(
+            node_name,
+            coerce_to_runnable(node.func, name=node_name, trace=False),
+        )
 
         # Create routing function with unique name to avoid conflicts
         # when multiple conditionals branch from same source
@@ -265,7 +278,9 @@ class FluentGraph(Generic[StateT]):
             Self for chaining
         """
         # Handle empty graph composition - nothing to do
-        if not other._graph.nodes or (len(other._graph.nodes) == 1 and START in other._graph.nodes):
+        if not other._graph.nodes or (
+            len(other._graph.nodes) == 1 and START in other._graph.nodes
+        ):
             return self
 
         # Track mapping of old names to new names for edge recreation
@@ -281,7 +296,7 @@ class FluentGraph(Generic[StateT]):
             node_spec = other._graph.nodes[old_name]
             # Extract the runnable from the node spec (StateNodeSpec has .runnable attribute)
             if hasattr(node_spec, "runnable"):
-                node_func = node_spec.runnable  # type: ignore[attr-defined]
+                node_func = node_spec.runnable
             else:
                 # Fallback for other node types
                 node_func = node_spec  # type: ignore[assignment]
@@ -292,8 +307,8 @@ class FluentGraph(Generic[StateT]):
             new_name = f"{base_name}_{self._node_counter}"
             name_mapping[old_name] = new_name
 
-            # Add node to this graph (pass the runnable directly)
-            self._graph.add_node(new_name, node_func)  # type: ignore[arg-type]
+            # Add node to this graph (node_func is already a Runnable from StateNodeSpec)
+            self._graph.add_node(new_name, node_func)
 
         # Identify first nodes of other graph (nodes that connect from START)
         for start_node, end_node in other._graph.edges:
@@ -316,7 +331,9 @@ class FluentGraph(Generic[StateT]):
                 if start != START and end in name_mapping
             }
             other_first_nodes = [
-                new_name for new_name in name_mapping.values() if new_name not in all_targets
+                new_name
+                for new_name in name_mapping.values()
+                if new_name not in all_targets
             ]
 
         # Connect our last nodes to other's first nodes
@@ -343,7 +360,9 @@ class FluentGraph(Generic[StateT]):
         # For now, use to_callable() for graphs with conditional edges in parallel
 
         # Update our last nodes to other's last nodes
-        self._last_nodes = [name_mapping[n] for n in other._last_nodes if n in name_mapping]
+        self._last_nodes = [
+            name_mapping[n] for n in other._last_nodes if n in name_mapping
+        ]
 
         # Ensure node counter stays unique
         self._node_counter = max(self._node_counter, other._node_counter) + 1
@@ -371,7 +390,7 @@ class FluentGraph(Generic[StateT]):
         def composite_node(state: StateT) -> StateT:
             """Execute the composed graph."""
             # Invoke returns the final state, cast to expected type
-            return compiled.invoke(state)  # type: ignore[return-value]
+            return compiled.invoke(state)
 
         # Set useful name for debugging
         composite_node.__name__ = f"composite_{len(self._graph.nodes)}_nodes"
